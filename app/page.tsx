@@ -15,10 +15,9 @@ const initialState = {
   sex: "Female",
   visitPurpose: "Holiday",
   sponsor: "Edna Adan University",
-  etasNumber: "FGS-1764079668",
+  etasNumber: "176" + Math.floor(1000000 + Math.random() * 9000000).toString(),
   etasIssueDate: "2025-11-29",
   etasExpiryDate: "2026-02-27",
-  notes: `A colored copy of this eTAS, along with your passport, must be presented to the immigration officer upon arrival at the designated point of entry. This Travel Authorization allows for a single entry and is valid for 90 days from the date of approval. Providing false information to immigration authorities constitutes a criminal offense and is punishable by law.`,
   applicantPhoto: "",
 };
 
@@ -98,11 +97,7 @@ export default function Home() {
             value={formData.passportNumber}
             onChange={handleChange("passportNumber")}
           />
-          <FormField
-            label="Passport Issue Place"
-            value={formData.passportIssuePlace}
-            onChange={handleChange("passportIssuePlace")}
-          />
+         
           <FormField
             label="Passport Issue Date"
             type="date"
@@ -130,23 +125,9 @@ export default function Home() {
             value={formData.sponsor}
             onChange={handleChange("sponsor")}
           />
-          <FormField
-            label="eTAS Number"
-            value={formData.etasNumber}
-            onChange={handleChange("etasNumber")}
-          />
-          <FormField
-            label="eTAS Issue Date"
-            type="date"
-            value={formData.etasIssueDate}
-            onChange={handleChange("etasIssueDate")}
-          />
-          <FormField
-            label="eTAS Expiry Date"
-            type="date"
-            value={formData.etasExpiryDate}
-            onChange={handleChange("etasExpiryDate")}
-          />
+        
+         
+          
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm font-medium text-slate-700">
               Applicant Photo
@@ -168,16 +149,7 @@ export default function Home() {
               />
             )}
           </div>
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-slate-700">
-              Notes
-            </label>
-            <textarea
-              className="h-32 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
-              value={formData.notes}
-              onChange={handleChange("notes")}
-            />
-          </div>
+        
           <div className="md:col-span-2 flex justify-end">
             <button
               type="submit"
