@@ -204,7 +204,7 @@ function PreviewContent() {
 
       <div className="mb-6 flex gap-4 no-print">
         <Link
-          href="/"
+          href={`/apply?id=${displayData.id}`}
           className="px-5 py-2 bg-white rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 border"
         >
           ← Edit Form
@@ -229,7 +229,7 @@ function PreviewContent() {
           {Array.from({ length: 120 }).map((_, i) => (
             <div
               key={i}
-              className="watermark-text whitespace-nowrap text-[20px] font-bold leading-[2] tracking-[0.02em] text-black"
+              className="watermark-text whitespace-nowrap text-[20px] font-bold leading-loose tracking-[0.02em] text-black"
             >
               {Array(8).fill(watermarkLine).join("   ")}
             </div>
@@ -274,7 +274,7 @@ function PreviewContent() {
           </div>
 
           {/* eTAS Header Bar */}
-          <div className="bg-[#dde0e1] h-[85px] flex items-center mb-8 border border-gray-300 rounded-[15px] overflow-hidden">
+          <div className="bg-[#dde0e1] h-21.25 flex items-center mb-8 border border-gray-300 rounded-[15px] overflow-hidden">
             <div className="w-[25%] h-10 flex pt-4 px-2 mb-auto">
               <Image
                 src={"/shade.png"}
@@ -322,8 +322,8 @@ function PreviewContent() {
 
           {/* Applicant Details Section */}
           <div className="flex gap-10 mb-8 px-2">
-            <div className="w-[155px] flex-shrink-0">
-              <div className="aspect-[3.5/4.5] bg-white p-[1px] shadow-sm overflow-hidden relative">
+            <div className="w-38.75 shrink-0">
+              <div className="aspect-[3.5/4.5] bg-white p-px shadow-sm overflow-hidden relative">
                 <Image
                   src={displayData.applicant_photo_url}
                   alt="Applicant Photo"
@@ -376,9 +376,9 @@ function PreviewContent() {
             <h3 className="font-bold text-[16px] mb-3">Notes</h3>
             <div className="flex justify-between items-start mb-4 gap-8">
               <div className="flex-1">
-                <ol className="text-[15.5px] leading-[1.5] text-black space-y-2">
+                <ol className="text-[15.5px] leading-normal text-black space-y-2">
                   <li className="flex gap-4">
-                    <span className="min-w-[15px]">1.</span>
+                    <span className="min-w-3.75">1.</span>
                     <span>
                       A colored copy of this eTAS, along with your passport,
                       must be presented to the immigration officer upon arrival
@@ -386,14 +386,14 @@ function PreviewContent() {
                     </span>
                   </li>
                   <li className="flex gap-4">
-                    <span className="min-w-[15px]">2.</span>
+                    <span className="min-w-3.75">2.</span>
                     <span>
                       This Travel Authorization allows for a single entry and is
                       valid for 90 days from the date of approval.
                     </span>
                   </li>
                   <li className="flex gap-4">
-                    <span className="min-w-[15px]">3.</span>
+                    <span className="min-w-3.75">3.</span>
                     <span>
                       Providing false information to immigration authorities
                       constitutes a criminal offense and is punishable by law.
@@ -432,7 +432,7 @@ function PreviewContent() {
                 className="object-contain"
               />
             </div>
-            <div className="relative mt-[-10px] text-center text-[12px] font-bold z-10">
+            <div className="relative -mt-2.5 text-center text-[12px] font-bold z-10">
               <div className="uppercase tracking-widest text-black/80">
                 Immigration and Citizenship Agency
               </div>
