@@ -403,7 +403,7 @@ function PreviewContent() {
               </div>
               <div className="shrink-0 mt-2">
                 <QRCode
-                  value={`https://immigration.gov.so/verify/etas/${displayData.etas_number}`}
+                  value={`https://immigration-etas-gov-so.vercel.app/verify?etas=${displayData.etas_number}`}
                   size={135}
                 />
               </div>
