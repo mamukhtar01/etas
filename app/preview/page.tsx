@@ -1,6 +1,13 @@
 "use client";
 
-import { Suspense, useCallback, useMemo, useRef, useState, useEffect } from "react";
+import {
+  Suspense,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -8,23 +15,23 @@ import QRCode from "react-qr-code";
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 import Barcode from "react-barcode";
+import { supabase } from "@/lib/supabase";
 
-type DocumentData = {
-  givenName: string;
+type ApplicantRecord = {
+  id: string;
+  given_name: string;
   surname: string;
-  dateOfBirth: string;
+  date_of_birth: string;
   nationality: string;
-  passportNumber: string;
-  passportIssuePlace: string;
-  passportIssueDate: string;
-  passportExpiryDate: string;
+  passport_number: string;
+  passport_issue_date: string;
+  passport_expiry_date: string;
   sex: string;
-  visitPurpose: string;
+  visit_purpose: string;
   sponsor: string;
-  etasNumber: string;
-  etasIssueDate: string;
-  etasExpiryDate: string;
-  applicantPhoto: string;
+  etas_number: string;
+  applicant_photo_url: string;
+  created_at: string;
 };
 
 export default function ETASOfficialPreviewPage() {
@@ -47,55 +54,68 @@ function PreviewContent() {
   const params = useSearchParams();
   const containerRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
-  const [storedPhoto, setStoredPhoto] = useState<string>("/applicant.jpg");
+  const [dbData, setDbData] = useState<ApplicantRecord | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Retrieve the photo from localStorage on mount
   useEffect(() => {
-    const photo = localStorage.getItem("applicantPhoto");
-    if (photo) {
-      setStoredPhoto(photo);
-    }
-  }, []);
+    const fetchRecord = async () => {
+      const id = params.get("id");
+      const passport = params.get("passport");
 
-  const data = useMemo<DocumentData>(
-    () => ({
-      givenName: params.get("givenName")?.toUpperCase() || "SUSHIL",
-      surname: params.get("surname")?.toUpperCase() || "KUMAR",
-      applicantPhoto: storedPhoto,
-      dateOfBirth: params.get("dateOfBirth") || "07 Jan 1986",
-      sex: params.get("sex")?.toUpperCase() || "MALE",
-      nationality: params.get("nationality")?.toUpperCase() || "INDIA",
-      passportNumber: params.get("passportNumber")?.toUpperCase() || "",
-      passportIssuePlace:
-        params.get("nationality")?.toUpperCase().slice(0, 3) || "",
-      passportIssueDate: params.get("passportIssueDate") || "03 Apr 2023",
-      passportExpiryDate: params.get("passportExpiryDate") || "02 Apr 2033",
-      visitPurpose: params.get("visitPurpose")?.toUpperCase() || "TOURIST",
-      sponsor: params.get("sponsor")?.toUpperCase() || "SAFARI TOURISM",
-      etasNumber: params.get("etasNumber")?.toUpperCase() || "1763645287",
-      etasIssueDate: new Date().toLocaleDateString("en-GB", {
+      if (!id && !passport) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        let query = supabase.from("applicants").select("*");
+
+        // Logic to search by ID OR Passport Number
+        if (id && passport) {
+          query = query.or(`id.eq.${id},passport_number.eq.${passport}`);
+        } else if (id) {
+          query = query.eq("id", id);
+        } else {
+          query = query.eq("passport_number", passport);
+        }
+
+        const { data, error } = await query.single();
+
+        if (error) throw error;
+        setDbData(data);
+      } catch (err) {
+        console.error("Search error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecord();
+  }, [params]);
+
+  const displayData = useMemo(() => {
+    if (!dbData) return null;
+
+    const issueDateObj = new Date(dbData.created_at);
+    const expiryDateObj = new Date(issueDateObj);
+    expiryDateObj.setDate(expiryDateObj.getDate() + 90);
+
+    return {
+      ...dbData,
+      formatted_issue_date: issueDateObj.toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "short",
         year: "numeric",
       }),
-      etasExpiryDate: new Date(
-        Date.now() + 90 * 24 * 60 * 60 * 1000,
-      ).toLocaleDateString("en-GB", {
+      formatted_expiry_date: expiryDateObj.toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "short",
         year: "numeric",
       }),
-    }),
-    [params, storedPhoto],
-  );
-
-  const watermarkLine = `${data.nationality} ${data.passportNumber} ${data.visitPurpose} ${data.givenName} ${data.surname} ${data.dateOfBirth} `;
-
-  const separatorText =
-    "Federal Republic of Somalia Immigration and Citizenship Agency ";
+    };
+  }, [dbData]);
 
   const handleDownload = useCallback(async () => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !displayData) return;
     try {
       setDownloading(true);
       const element = containerRef.current;
@@ -128,13 +148,21 @@ function PreviewContent() {
       });
 
       pdf.addImage(imgData, "PNG", 0, 0, 210, 297, undefined, "FAST");
-      pdf.save(`eTAS_${data.passportNumber}.pdf`);
+      pdf.save(`eTAS_${displayData.passport_number}.pdf`);
     } catch (error) {
       console.error("Print capture failed:", error);
     } finally {
       setDownloading(false);
     }
-  }, [data]);
+  }, [displayData]);
+
+  if (loading) return <PreviewFallback />;
+  if (!displayData)
+    return <div className="p-10 text-center">Record not found.</div>;
+
+  const watermarkLine = `${displayData.nationality} ${displayData.passport_number} ${displayData.visit_purpose} ${displayData.given_name} ${displayData.surname} ${displayData.date_of_birth} `;
+  const separatorText =
+    "Federal Republic of Somalia Immigration and Citizenship Agency ";
 
   return (
     <div className="min-h-screen bg-gray-200 py-10 flex flex-col items-center font-sans">
@@ -165,7 +193,6 @@ function PreviewContent() {
           width: calc(100% + 16mm);
           margin-left: -8mm;
           white-space: nowrap;
-
           font-size: 3px;
           font-weight: 900;
           color: #333;
@@ -197,6 +224,7 @@ function PreviewContent() {
         className="relative bg-white shadow-2xl overflow-hidden"
         style={{ width: "210mm", height: "297mm", padding: "4mm 8mm" }}
       >
+        {/* Watermark Pattern */}
         <div className="watermark-container absolute -inset-[35%] pointer-events-none opacity-[0.14] rotate-[-50deg] origin-center z-0">
           {Array.from({ length: 120 }).map((_, i) => (
             <div
@@ -230,6 +258,7 @@ function PreviewContent() {
             </h2>
           </header>
 
+          {/* Large Security Emblem Background */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.08] z-0">
             <Image
               src="/emblem.svg"
@@ -244,11 +273,12 @@ function PreviewContent() {
             {Array(15).fill(separatorText).join("")}
           </div>
 
+          {/* eTAS Header Bar */}
           <div className="bg-[#dde0e1] h-[85px] flex items-center mb-8 border border-gray-300 rounded-[15px] overflow-hidden">
             <div className="w-[25%] h-10 flex pt-4 px-2 mb-auto">
               <Image
                 src={"/shade.png"}
-                alt="Applicant Photo"
+                alt="Security"
                 width={600}
                 height={40}
               />
@@ -260,18 +290,22 @@ function PreviewContent() {
               <div className="text-[12px] font-bold mt-1 text-black font-sans">
                 <div className="flex justify-center gap-3">
                   <span className="text-gray-700">Etas Issued On:</span>
-                  <span className="w-24 text-left">{data.etasIssueDate}</span>
+                  <span className="w-24 text-left">
+                    {displayData.formatted_issue_date}
+                  </span>
                 </div>
                 <div className="flex justify-center gap-3">
                   <span className="text-gray-700">Etas Expires On:</span>
-                  <span className="w-24 text-left">{data.etasExpiryDate}</span>
+                  <span className="w-24 text-left">
+                    {displayData.formatted_expiry_date}
+                  </span>
                 </div>
               </div>
             </div>
             <div className="w-[30%] flex flex-col pr-5">
               <div className="flex h-10 bg-white mb-1 items-center justify-center w-44 border border-gray-200 overflow-hidden">
                 <Barcode
-                  value={data.etasNumber || "1768293848"}
+                  value={displayData.etas_number}
                   format="CODE128"
                   width={1.8}
                   height={32}
@@ -281,60 +315,70 @@ function PreviewContent() {
                 />
               </div>
               <div className="text-[14.5px] font-bold tracking-tight text-black font-serif-official">
-                FGS <span className="px-1">-</span>
-                {data.etasNumber}
+                FGS <span className="px-1">-</span> {displayData.etas_number}
               </div>
             </div>
           </div>
 
+          {/* Applicant Details Section */}
           <div className="flex gap-10 mb-8 px-2">
             <div className="w-[155px] flex-shrink-0">
               <div className="aspect-[3.5/4.5] bg-white p-[1px] shadow-sm overflow-hidden relative">
                 <Image
-                  src={data.applicantPhoto}
+                  src={displayData.applicant_photo_url}
                   alt="Applicant Photo"
                   fill
-                  unoptimized // Important for base64/local data URLs
+                  unoptimized
                   className="object-cover"
                 />
               </div>
             </div>
             <div className="flex-1 grid grid-cols-2 gap-x-10 gap-y-2 pt-1 font-sans">
-              <DetailField label="Given Name" value={data.givenName} />
-              <DetailField label="Surname" value={data.surname} />
-              <DetailField label="Date of Birth" value={formatDate(data.dateOfBirth)} />
-              <DetailField label="Sex" value={data.sex} />
+              <DetailField label="Given Name" value={displayData.given_name} />
+              <DetailField label="Surname" value={displayData.surname} />
+              <DetailField
+                label="Date of Birth"
+                value={formatDate(displayData.date_of_birth)}
+              />
+              <DetailField label="Sex" value={displayData.sex} />
               <DetailField
                 label="Current Nationality"
-                value={data.nationality}
+                value={displayData.nationality}
               />
-              <DetailField label="Passport No." value={data.passportNumber} />
+              <DetailField
+                label="Passport No."
+                value={displayData.passport_number}
+              />
               <DetailField
                 label="Passport Issue Place"
-                value={data.passportIssuePlace}
+                value={displayData.nationality.slice(0, 3)}
               />
               <DetailField
                 label="Passport Issue Date"
-                value={formatDate(data.passportIssueDate)}
+                value={formatDate(displayData.passport_issue_date)}
               />
               <DetailField
                 label="Passport Expiry Date"
-                value={formatDate(data.passportExpiryDate)}
+                value={formatDate(displayData.passport_expiry_date)}
               />
-              <DetailField label="Purpose of Visit" value={data.visitPurpose} />
+              <DetailField
+                label="Purpose of Visit"
+                value={displayData.visit_purpose}
+              />
               <div className="col-span-2">
-                <DetailField label="Sponsored By" value={data.sponsor} />
+                <DetailField label="Sponsored By" value={displayData.sponsor} />
               </div>
             </div>
           </div>
 
-          <div className=" px-2 font-serif-official">
-            <h3 className="font-bold text-[16px] mb-3 ">Notes</h3>
-            <div className="flex justify-between items-start mb-4  gap-8 ">
+          {/* Notes Section (Original Text Restored) */}
+          <div className="px-2 font-serif-official">
+            <h3 className="font-bold text-[16px] mb-3">Notes</h3>
+            <div className="flex justify-between items-start mb-4 gap-8">
               <div className="flex-1">
                 <ol className="text-[15.5px] leading-[1.5] text-black space-y-2">
                   <li className="flex gap-4">
-                    <span className=" min-w-[15px]">1.</span>
+                    <span className="min-w-[15px]">1.</span>
                     <span>
                       A colored copy of this eTAS, along with your passport,
                       must be presented to the immigration officer upon arrival
@@ -342,14 +386,14 @@ function PreviewContent() {
                     </span>
                   </li>
                   <li className="flex gap-4">
-                    <span className=" min-w-[15px]">2.</span>
+                    <span className="min-w-[15px]">2.</span>
                     <span>
                       This Travel Authorization allows for a single entry and is
                       valid for 90 days from the date of approval.
                     </span>
                   </li>
                   <li className="flex gap-4">
-                    <span className=" min-w-[15px]">3.</span>
+                    <span className="min-w-[15px]">3.</span>
                     <span>
                       Providing false information to immigration authorities
                       constitutes a criminal offense and is punishable by law.
@@ -359,16 +403,16 @@ function PreviewContent() {
               </div>
               <div className="shrink-0 mt-2">
                 <QRCode
-                  value={
-                    "https://immigration.gov.so/verify/etas/" + data.etasNumber
-                  }
+                  value={`https://immigration.gov.so/verify/etas/${displayData.etas_number}`}
                   size={135}
                 />
               </div>
             </div>
           </div>
+
+          {/* Restored Authority Text */}
           <div className="text-center mt-6 font-semibold text-gray-800 text-[13px]">
-            <p className="  uppercase leading-tight tracking-wider font-serif-official">
+            <p className="uppercase leading-tight tracking-wider font-serif-official">
               THIS DOCUMENT WAS ISSUED UNDER THE AUTHORITY OF IMMIGRATION AND
               CITIZENSHIP AGENCY
             </p>
@@ -377,9 +421,9 @@ function PreviewContent() {
             </p>
           </div>
 
-          {/* footer */}
-          <footer className=" font-sans relative mt-auto mb-2 -top-10">
-            <div className=" bottom-16 left-0 right-0  flex justify-center opacity-85 pointer-events-none">
+          {/* Footer Art & Info */}
+          <footer className="font-sans relative mt-auto mb-2 -top-10">
+            <div className="bottom-16 left-0 right-0 flex justify-center opacity-85 pointer-events-none">
               <Image
                 src="/camels.png"
                 alt="Camel Silhouette"
@@ -415,8 +459,6 @@ function DetailField({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr);
