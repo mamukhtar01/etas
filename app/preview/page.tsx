@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useMemo, useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -27,16 +27,41 @@ type DocumentData = {
   applicantPhoto: string;
 };
 
-export default function ETASOfficialPreview() {
+export default function ETASOfficialPreviewPage() {
+  return (
+    <Suspense fallback={<PreviewFallback />}>
+      <PreviewContent />
+    </Suspense>
+  );
+}
+
+function PreviewFallback() {
+  return (
+    <div className="min-h-screen bg-gray-200 flex items-center justify-center text-sm text-gray-600">
+      Loading preview...
+    </div>
+  );
+}
+
+function PreviewContent() {
   const params = useSearchParams();
   const containerRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
+  const [storedPhoto, setStoredPhoto] = useState<string>("/applicant.jpg");
+
+  // Retrieve the photo from localStorage on mount
+  useEffect(() => {
+    const photo = localStorage.getItem("applicantPhoto");
+    if (photo) {
+      setStoredPhoto(photo);
+    }
+  }, []);
 
   const data = useMemo<DocumentData>(
     () => ({
       givenName: params.get("givenName")?.toUpperCase() || "SUSHIL",
       surname: params.get("surname")?.toUpperCase() || "KUMAR",
-      applicantPhoto: params.get("applicantPhoto") || "/applicant.jpg",
+      applicantPhoto: storedPhoto,
       dateOfBirth: params.get("dateOfBirth") || "07 Jan 1986",
       sex: params.get("sex")?.toUpperCase() || "MALE",
       nationality: params.get("nationality")?.toUpperCase() || "INDIA",
@@ -61,12 +86,11 @@ export default function ETASOfficialPreview() {
         year: "numeric",
       }),
     }),
-    [params],
+    [params, storedPhoto],
   );
 
   const watermarkLine = `${data.nationality} ${data.passportNumber} ${data.visitPurpose} ${data.givenName} ${data.surname} ${data.dateOfBirth} `;
 
-  // The repeating text for the separator line
   const separatorText =
     "Federal Republic of Somalia Immigration and Citizenship Agency ";
 
@@ -137,9 +161,8 @@ export default function ETASOfficialPreview() {
           font-family: "Noto Naskh Arabic", serif;
         }
 
-        /* Full width micro-text line style */
         .security-text-line {
-          width: calc(100% + 16mm); /* Offset the 8mm padding on each side */
+          width: calc(100% + 16mm);
           margin-left: -8mm;
           white-space: nowrap;
 
@@ -164,7 +187,7 @@ export default function ETASOfficialPreview() {
           disabled={downloading}
           className="px-8 py-2 bg-[#0056b3] text-white rounded-md shadow-md font-bold text-sm hover:bg-blue-800 transition-colors"
         >
-          {downloading ? "Formatting PDF..." : "Download Official PDF"}
+          {downloading ? "Formatting PDF..." : "Download PDF"}
         </button>
       </div>
 
@@ -191,8 +214,8 @@ export default function ETASOfficialPreview() {
               <Image
                 src="/logo.svg"
                 alt="Coat of Arms"
-                width={112}
-                height={112}
+                width={82}
+                height={82}
                 priority
               />
             </div>
@@ -207,7 +230,6 @@ export default function ETASOfficialPreview() {
             </h2>
           </header>
 
-          {/* Sublte Hidden Emblem Background */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.08] z-0">
             <Image
               src="/emblem.svg"
@@ -218,16 +240,20 @@ export default function ETASOfficialPreview() {
             />
           </div>
 
-          {/* REPEATING TEXT LINE ADDED HERE */}
           <div className="security-text-line mb-4">
             {Array(15).fill(separatorText).join("")}
           </div>
 
-          <div className="bg-[#dde0e1] h-[85px] flex items-center mb-8 border border-gray-300 rounded-[8px] overflow-hidden">
-            <div className="w-[25%] h-full flex pt-4 px-4">
-              <div className="w-full h-10 bg-black/5 blur-[1px]"></div>
+          <div className="bg-[#dde0e1] h-[85px] flex items-center mb-8 border border-gray-300 rounded-[15px] overflow-hidden">
+            <div className="w-[25%] h-10 flex pt-4 px-2 mb-auto">
+              <Image
+                src={"/shade.png"}
+                alt="Applicant Photo"
+                width={600}
+                height={40}
+              />
             </div>
-            <div className="w-[45%] text-center">
+            <div className="w-[45%] text-center py-3">
               <div className="text-[34px] font-bold leading-none tracking-tight text-gray-900 font-serif-official">
                 eTAS
               </div>
@@ -245,9 +271,7 @@ export default function ETASOfficialPreview() {
             <div className="w-[30%] flex flex-col pr-5">
               <div className="flex h-10 bg-white mb-1 items-center justify-center w-44 border border-gray-200 overflow-hidden">
                 <Barcode
-                  value={
-                    data.etasNumber|| "1768293848"
-                  }
+                  value={data.etasNumber || "1768293848"}
                   format="CODE128"
                   width={1.8}
                   height={32}
@@ -265,11 +289,12 @@ export default function ETASOfficialPreview() {
 
           <div className="flex gap-10 mb-8 px-2">
             <div className="w-[155px] flex-shrink-0">
-              <div className="aspect-[3.5/4.5] border-[1.5px] border-gray-400 bg-white p-[1px] shadow-sm overflow-hidden relative">
+              <div className="aspect-[3.5/4.5] bg-white p-[1px] shadow-sm overflow-hidden relative">
                 <Image
                   src={data.applicantPhoto}
                   alt="Applicant Photo"
                   fill
+                  unoptimized // Important for base64/local data URLs
                   className="object-cover"
                 />
               </div>
@@ -277,7 +302,7 @@ export default function ETASOfficialPreview() {
             <div className="flex-1 grid grid-cols-2 gap-x-10 gap-y-2 pt-1 font-sans">
               <DetailField label="Given Name" value={data.givenName} />
               <DetailField label="Surname" value={data.surname} />
-              <DetailField label="Date of Birth" value={data.dateOfBirth} />
+              <DetailField label="Date of Birth" value={formatDate(data.dateOfBirth)} />
               <DetailField label="Sex" value={data.sex} />
               <DetailField
                 label="Current Nationality"
@@ -290,11 +315,11 @@ export default function ETASOfficialPreview() {
               />
               <DetailField
                 label="Passport Issue Date"
-                value={data.passportIssueDate}
+                value={formatDate(data.passportIssueDate)}
               />
               <DetailField
                 label="Passport Expiry Date"
-                value={data.passportExpiryDate}
+                value={formatDate(data.passportExpiryDate)}
               />
               <DetailField label="Purpose of Visit" value={data.visitPurpose} />
               <div className="col-span-2">
@@ -303,28 +328,28 @@ export default function ETASOfficialPreview() {
             </div>
           </div>
 
-          <div className="  px-2 font-serif-official">
+          <div className=" px-2 font-serif-official">
             <h3 className="font-bold text-[16px] mb-3 ">Notes</h3>
             <div className="flex justify-between items-start mb-4  gap-8 ">
               <div className="flex-1">
-                <ol className="text-[13.5px] leading-[1.3] text-black space-y-3">
-                  <li className="flex gap-3">
-                    <span className="font-bold min-w-[15px]">1.</span>
+                <ol className="text-[15.5px] leading-[1.5] text-black space-y-2">
+                  <li className="flex gap-4">
+                    <span className=" min-w-[15px]">1.</span>
                     <span>
                       A colored copy of this eTAS, along with your passport,
                       must be presented to the immigration officer upon arrival
                       at the designated point of entry.
                     </span>
                   </li>
-                  <li className="flex gap-3">
-                    <span className="font-bold min-w-[15px]">2.</span>
+                  <li className="flex gap-4">
+                    <span className=" min-w-[15px]">2.</span>
                     <span>
                       This Travel Authorization allows for a single entry and is
                       valid for 90 days from the date of approval.
                     </span>
                   </li>
-                  <li className="flex gap-3">
-                    <span className="font-bold min-w-[15px]">3.</span>
+                  <li className="flex gap-4">
+                    <span className=" min-w-[15px]">3.</span>
                     <span>
                       Providing false information to immigration authorities
                       constitutes a criminal offense and is punishable by law.
@@ -333,31 +358,37 @@ export default function ETASOfficialPreview() {
                 </ol>
               </div>
               <div className="shrink-0 mt-2">
-                <QRCode value={"https://immigration.gov.so/verify/etas/" + data.etasNumber} size={135} />
+                <QRCode
+                  value={
+                    "https://immigration.gov.so/verify/etas/" + data.etasNumber
+                  }
+                  size={135}
+                />
               </div>
             </div>
           </div>
-          <div className="text-center mt-6">
-            <p className="text-[13px]  uppercase leading-tight tracking-wider font-serif-official">
+          <div className="text-center mt-6 font-semibold text-gray-800 text-[13px]">
+            <p className="  uppercase leading-tight tracking-wider font-serif-official">
               THIS DOCUMENT WAS ISSUED UNDER THE AUTHORITY OF IMMIGRATION AND
               CITIZENSHIP AGENCY
             </p>
-            <p className="text-[12px] mt-1 tracking-[0.05em] uppercase font-serif-official">
+            <p className="mt-1 tracking-[0.05em] uppercase font-serif-official">
               ETAS.GOV.SO
             </p>
           </div>
 
-          <footer className="mt-32 relative pb-6 font-sans">
-            <div className="absolute bottom-16 left-0 right-0 flex justify-center opacity-85 pointer-events-none">
+          {/* footer */}
+          <footer className=" font-sans relative mt-auto mb-2 -top-10">
+            <div className=" bottom-16 left-0 right-0  flex justify-center opacity-85 pointer-events-none">
               <Image
                 src="/camels.png"
                 alt="Camel Silhouette"
                 width={800}
-                height={180}
+                height={80}
                 className="object-contain"
               />
             </div>
-            <div className="relative text-center text-[12px] font-bold z-10 pt-20">
+            <div className="relative mt-[-10px] text-center text-[12px] font-bold z-10">
               <div className="uppercase tracking-widest text-black/80">
                 Immigration and Citizenship Agency
               </div>
@@ -383,4 +414,16 @@ function DetailField({ label, value }: { label: string; value: string }) {
       </span>
     </div>
   );
+}
+
+
+
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
