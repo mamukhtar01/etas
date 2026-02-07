@@ -59,6 +59,7 @@ function PreviewContent() {
   const [downloading, setDownloading] = useState(false);
   const [dbData, setDbData] = useState<ApplicantRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const preview = params.get("preview");
 
   useEffect(() => {
     const fetchRecord = async () => {
@@ -206,12 +207,16 @@ function PreviewContent() {
 
       {/* Action Buttons */}
       <div className="mb-6 flex gap-4 no-print z-50">
-        <Link
+        {
+          !preview  && (
+            <Link
           href={`/apply?id=${displayData.id}`}
-          className="px-5 py-2 bg-white rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 border transition-colors"
+          className="px-5 py-2 text-[#0056b3] bg-white rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 border transition-colors"
         >
           ← Edit Form
         </Link>
+          )
+        }
         <button
           onClick={handleDownload}
           disabled={downloading}
@@ -329,7 +334,7 @@ function PreviewContent() {
                     </ol>
                   </div>
                   <div className="shrink-0 mt-2">
-                    <QRCode value={`https://etas.gov.so/verify?etas=${displayData.etas_number}`} size={135} />
+                    <QRCode value={`https://immigration-etas-gov-so.vercel.app/verify?etas=${displayData.etas_number}`} size={135} />
                   </div>
                 </div>
               </div>

@@ -25,7 +25,7 @@ export default function PassportSearchPage() {
       if (error || !data) {
         setIsErrorState(true);
       } else {
-        router.push(`/preview?id=${data.id}`);
+        router.push(`/preview?id=${data.id}&preview=true`);
       }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
