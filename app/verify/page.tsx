@@ -67,11 +67,11 @@ export default function PassportSearchPage() {
     <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center p-4 font-sans">
       <div className="w-full max-w-120 bg-[#333333] rounded-sm shadow-2xl p-8 border border-white/5">
         <h1 className="text-white text-xl font-semibold mb-4">
-          Enter a password
+          Enter a passport number
         </h1>
         
         <p className="text-gray-300 text-[13px] leading-relaxed mb-6">
-          This file is password protected. Please enter a password to open the file.
+          This file is password protected. Please enter a passport number to open the file.
         </p>
 
         <form onSubmit={handleSearch} className="space-y-6">
