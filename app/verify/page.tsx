@@ -1,10 +1,22 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function VerificationPage() {
+
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerificationBox />
+    </Suspense>
+  );
+}
+
+function VerificationBox() {
      const params = useSearchParams();
   return (
+   
     <div className="min-h-screen bg-gray-200 flex items-center justify-center">
       <div className="bg-[#4189dd]   text-center p-14 flex flex-col items-center justify-center">
         
@@ -25,5 +37,6 @@ export default function VerificationPage() {
 
       </div>
     </div>
+   
   );
 }
