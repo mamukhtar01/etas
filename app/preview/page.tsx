@@ -333,9 +333,13 @@ function PreviewContent() {
                       </li>
                     </ol>
                   </div>
-                  <div className="shrink-0 mt-2">
+                  <div className="shrink-0 mt-2 relative">
                     <QRCode value={`https://immigration-etas-gov-so.vercel.app/verify?etas=${displayData.etas_number}`} size={135} />
+                    <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 ">
+                      <span className="block text-center text-[4px] mt-1 font-bold text-gray-900 uppercase">{displayData.given_name}</span>
+                    </div>
                   </div>
+
                 </div>
               </div>
 
