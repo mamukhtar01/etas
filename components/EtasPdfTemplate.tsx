@@ -38,7 +38,7 @@ export function ETASPdfTemplate({
       style={{ width: "210mm", height: "297mm", padding: "4mm 8mm" }}
     >
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Tinos:wght@400;700&family=Noto+Naskh+Arabic:wght@700&display=swap");
+        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Ubuntu:wght@700&family=Noto+Naskh+Arabic:wght@700&display=swap");
         @media print {
           body {
             background: white !important;
@@ -52,7 +52,10 @@ export function ETASPdfTemplate({
           }
         }
         .font-serif-official {
-          font-family: "Tinos", "Times New Roman", serif;
+          font-family: "Times New Roman", serif;
+        }
+        .font-header {
+          font-family: "Ubuntu", sans-serif;
         }
         .font-arabic {
           font-family: "Noto Naskh Arabic", serif;
@@ -84,7 +87,7 @@ export function ETASPdfTemplate({
 
       <div className="relative z-10 flex flex-col h-full text-black">
         {/* Official Header */}
-        <header className="text-center mb-5">
+        <header className="text-center mb-5 font-header">
           <div className="flex justify-center mb-2">
             <Image
               src="/logo.svg"
@@ -94,13 +97,13 @@ export function ETASPdfTemplate({
               priority
             />
           </div>
-          <h1 className="text-[14px] font-bold tracking-wider uppercase font-serif-official">
+          <h1 className="text-[12px]  tracking-wider uppercase ">
             JAMHUURIYADDA FEDERAALKA SOOMAALIYA
           </h1>
           <h1 className="text-[16px] font-bold my-0.5 font-arabic">
             جمهورية الصومال الفيدرالية
           </h1>
-          <h2 className="text-[16px] font-bold tracking-wide font-serif-official">
+          <h2 className="text-[13px] font-bold tracking-wide ">
             Federal Republic of Somalia
           </h2>
         </header>
@@ -121,7 +124,7 @@ export function ETASPdfTemplate({
         </div>
 
         {/* eTAS Header Bar */}
-        <div className="bg-[#dde0e1] h-21.25 flex items-center mb-8 border border-gray-300 rounded-[15px] overflow-hidden">
+        <div className="bg-[#e2dfde] h-21.25 flex items-center mb-8 border border-gray-300 rounded-[15px] overflow-hidden">
           <div className="w-[25%] h-10 flex pt-4 px-2 mb-auto">
             <Image src={"/shade.png"} alt="Security" width={600} height={40} />
           </div>
@@ -175,7 +178,7 @@ export function ETASPdfTemplate({
               />
             </div>
           </div>
-          <div className="flex-1 grid grid-cols-2 gap-x-10 gap-y-2 pt-1 font-sans">
+          <div className="flex-1 grid grid-cols-2 gap-x-10 gap-y-2 pt-1">
             <DetailField label="Given Name" value={displayData.given_name} />
             <DetailField label="Surname" value={displayData.surname} />
             <DetailField
@@ -294,7 +297,7 @@ export function ETASPdfTemplate({
 
 function DetailField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex gap-2 items-baseline pb-1.5">
+    <div className="flex gap-2 items-baseline pb-1.5 font-serif-official">
       <span className="text-[14.5px] text-gray-800 whitespace-nowrap">
         {label}:
       </span>

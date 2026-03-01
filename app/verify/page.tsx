@@ -128,12 +128,12 @@ function VerificationBox() {
         orientation: "p",
         unit: "mm",
         format: "a4",
-        compress: true,
-        encryption: {
-          userPassword: displayData.passport_number,
-          ownerPassword: displayData.passport_number,
-          userPermissions: ["print"],
-        },
+        // compress: true,
+        // encryption: {
+        //   userPassword: displayData.passport_number,
+        //   ownerPassword: displayData.passport_number,
+        //   userPermissions: ["print"],
+        // },
       });
 
       pdf.addImage(imgData, "PNG", 0, 0, 210, 297, undefined, "FAST");
@@ -177,7 +177,7 @@ function VerificationBox() {
           top: 0,
           width: "210mm",
           height: "297mm",
-          padding: "4mm 8mm",
+          padding: "1mm 1mm",
           background: "white",
         }}
       >
