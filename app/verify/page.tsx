@@ -128,12 +128,12 @@ function VerificationBox() {
         orientation: "p",
         unit: "mm",
         format: "a4",
-        // compress: true,
-        // encryption: {
-        //   userPassword: displayData.passport_number,
-        //   ownerPassword: displayData.passport_number,
-        //   userPermissions: ["print"],
-        // },
+        compress: true,
+        encryption: {
+          userPassword: displayData.passport_number,
+          ownerPassword: displayData.passport_number,
+          userPermissions: ["print"],
+        },
       });
 
       pdf.addImage(imgData, "PNG", 0, 0, 210, 297, undefined, "FAST");
@@ -152,6 +152,7 @@ function VerificationBox() {
 
   return (
     <div className="min-h-screen bg-gray-200 flex flex-col items-center justify-center">
+    
       <div className="bg-[#4189dd] text-center p-14 flex flex-col items-center justify-center">
         <h1 className="text-black text-2xl font-serif font-semibold leading-snug">
           You will require your Passport Number to open the
@@ -164,9 +165,10 @@ function VerificationBox() {
           disabled={loading || generating || !displayData}
           className="mt-6 block text-2xl text-purple-900 font-serif font-bold underline text-center disabled:opacity-60"
         >
-          {generating ? "" : "CLICK HERE TO PROCEED"}
+           CLICK HERE TO PROCEED
         </button>
       </div>
+  
 
       {/* Hidden render target for html2canvas */}
       <div
