@@ -164,7 +164,7 @@ function VerificationBox() {
           disabled={loading || generating || !displayData}
           className="mt-6 block text-2xl text-purple-900 font-serif font-bold underline text-center disabled:opacity-60"
         >
-          {generating ? "Generating PDF..." : "CLICK HERE TO PROCEED"}
+          {generating ? "" : "CLICK HERE TO PROCEED"}
         </button>
       </div>
 
