@@ -31,6 +31,11 @@ export function ETASPdfTemplate({
   const separatorText =
     "Federal Republic of Somalia Immigration and Citizenship Agency ";
 
+  const qrValue =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/verify?etas=${displayData.etas_number}`
+      : `/verify?etas=${displayData.etas_number}`;
+
   return (
     <div
       id="print-container"
@@ -248,7 +253,7 @@ export function ETASPdfTemplate({
             </div>
             <div className="shrink-0 mt-2 relative">
               <QRCode
-                value={`https://immigration-etas-gov-so.vercel.app/verify?etas=${displayData.etas_number}`}
+                value={qrValue}
                 size={135}
               />
               <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 ">

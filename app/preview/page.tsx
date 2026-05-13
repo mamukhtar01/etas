@@ -96,6 +96,7 @@ function PreviewContent() {
     try {
       setDownloading(true);
       const element = containerRef.current;
+      const filename = `${displayData.passport_number}_${displayData.etas_number}.pdf`;
 
       const canvas = await html2canvas(element, {
         scale: 4,
@@ -116,7 +117,7 @@ function PreviewContent() {
       });
 
       pdf.addImage(imgData, "PNG", 0, 0, 210, 297, undefined, "FAST");
-      pdf.save(`eTAS_${displayData.passport_number}.pdf`);
+      pdf.save(filename);
     } catch (error) {
       console.error("Print capture failed:", error);
     } finally {
@@ -153,6 +154,14 @@ function PreviewContent() {
         <div className="scaling-node">
           {displayData && <ETASPdfTemplate displayData={displayData} />}
         </div>
+      </div>
+
+      <div
+        ref={containerRef}
+        className="fixed left-[-10000px] top-0 pointer-events-none"
+        aria-hidden="true"
+      >
+        {displayData && <ETASPdfTemplate displayData={displayData} />}
       </div>
     </div>
   );

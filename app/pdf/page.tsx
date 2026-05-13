@@ -97,6 +97,7 @@ function PreviewContent() {
     try {
       setDownloading(true);
       const element = containerRef.current;
+      const filename = `${displayData.passport_number}_${displayData.etas_number}.pdf`;
 
       const canvas = await html2canvas(element, {
         scale: 4,
@@ -126,6 +127,7 @@ function PreviewContent() {
       const pdfBlob = pdf.output("blob");
       const pdfUrl = URL.createObjectURL(pdfBlob);
       window.location.href = pdfUrl;
+      document.title = filename;
       setTimeout(() => URL.revokeObjectURL(pdfUrl), 60_000); // cleanup
     } catch (error) {
       console.error("Print capture failed:", error);
