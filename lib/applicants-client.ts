@@ -55,3 +55,19 @@ export async function upsertApplicant(
   const payload = (await response.json()) as { data: ApplicantRecord };
   return payload.data;
 }
+
+export async function fetchApplicants(): Promise<ApplicantRecord[]> {
+  const response = await fetch("/api/applicants", {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as
+      | { error?: string }
+      | null;
+    throw new Error(payload?.error ?? "Failed to fetch applicants");
+  }
+
+  const payload = (await response.json()) as { data: ApplicantRecord[] };
+  return payload.data;
+}

@@ -1,4 +1,4 @@
-import { getSessionUser } from "@/lib/auth";
+import { findUserById, getSessionUser } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import {
   ensureApplicantsOwnershipSchema,
@@ -70,6 +70,7 @@ async function getApplicantByFilter(filters: {
   passport?: string;
   etas?: string;
   userId: string;
+  isAdmin: boolean;
 }) {
   const conditions: string[] = [];
   const args: string[] = [];
@@ -93,13 +94,36 @@ async function getApplicantByFilter(filters: {
     return null;
   }
 
-  const result = await turso.execute({
-    sql: `SELECT * FROM applicants WHERE user_id = ? AND (${conditions.join(" OR ")}) LIMIT 1`,
-    args: [filters.userId, ...args],
-  });
+  const result = filters.isAdmin
+    ? await turso.execute({
+        sql: `SELECT * FROM applicants WHERE (${conditions.join(" OR ")}) LIMIT 1`,
+        args,
+      })
+    : await turso.execute({
+        sql: `SELECT * FROM applicants WHERE user_id = ? AND (${conditions.join(" OR ")}) LIMIT 1`,
+        args: [filters.userId, ...args],
+      });
 
   const row = result.rows[0] as unknown as Record<string, unknown> | undefined;
   return row ? rowToApplicant(row) : null;
+}
+
+async function listApplicantsByRole(filters: {
+  userId: string;
+  isAdmin: boolean;
+}) {
+  const result = filters.isAdmin
+    ? await turso.execute({
+        sql: "SELECT * FROM applicants ORDER BY created_at DESC",
+      })
+    : await turso.execute({
+        sql: "SELECT * FROM applicants WHERE user_id = ? ORDER BY created_at DESC",
+        args: [filters.userId],
+      });
+
+  return result.rows.map((row) =>
+    rowToApplicant(row as unknown as Record<string, unknown>),
+  );
 }
 
 export async function GET(request: NextRequest) {
@@ -112,17 +136,33 @@ export async function GET(request: NextRequest) {
     await ensureApplicantsSchema();
     await ensureApplicantsOwnershipSchema();
     await ensureApplicantsIndexes();
+    const user = await findUserById(sessionUser.id);
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const isAdmin = user.role === "admin";
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id")?.trim();
     const passport = searchParams.get("passport")?.trim();
     const etas = searchParams.get("etas")?.trim();
 
+    if (!id && !passport && !etas) {
+      const data = await listApplicantsByRole({
+        userId: sessionUser.id,
+        isAdmin,
+      });
+      return NextResponse.json({ data });
+    }
+
     const data = await getApplicantByFilter({
       id,
       passport,
       etas,
       userId: sessionUser.id,
+      isAdmin,
     });
 
     if (!data) {
@@ -149,6 +189,13 @@ export async function POST(request: NextRequest) {
     await ensureApplicantsSchema();
     await ensureApplicantsOwnershipSchema();
     await ensureApplicantsIndexes();
+    const user = await findUserById(sessionUser.id);
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const isAdmin = user.role === "admin";
 
     const input = (await request.json()) as ApplicantUpsertInput;
 
@@ -179,11 +226,21 @@ export async function POST(request: NextRequest) {
     const normalizedPassport = input.passport_number.trim().toUpperCase();
 
     const existing = await turso.execute({
-      sql: "SELECT id FROM applicants WHERE id = ? AND user_id = ? LIMIT 1",
-      args: [id, sessionUser.id],
+      sql: isAdmin
+        ? "SELECT id, user_id, created_by_username FROM applicants WHERE id = ? LIMIT 1"
+        : "SELECT id, user_id, created_by_username FROM applicants WHERE id = ? AND user_id = ? LIMIT 1",
+      args: isAdmin ? [id] : [id, sessionUser.id],
     });
 
     if (existing.rows.length > 0) {
+      const existingRow = existing.rows[0] as
+        | { user_id?: unknown; created_by_username?: unknown }
+        | undefined;
+      const ownerUserId = String(existingRow?.user_id ?? sessionUser.id);
+      const createdByUsername = String(
+        existingRow?.created_by_username ?? user.username,
+      );
+
       await turso.execute({
         sql: `
           UPDATE applicants
@@ -218,9 +275,9 @@ export async function POST(request: NextRequest) {
           input.sponsor,
           input.etas_number,
           input.applicant_photo_url,
-          sessionUser.id,
-          sessionUser.username,
-          sessionUser.username,
+          ownerUserId,
+          createdByUsername,
+          user.username,
           id,
         ],
       });
@@ -261,15 +318,17 @@ export async function POST(request: NextRequest) {
           input.etas_number,
           input.applicant_photo_url,
           sessionUser.id,
-          sessionUser.username,
-          sessionUser.username,
+          user.username,
+          user.username,
         ],
       });
     }
 
     const result = await turso.execute({
-      sql: "SELECT * FROM applicants WHERE id = ? AND user_id = ? LIMIT 1",
-      args: [id, sessionUser.id],
+      sql: isAdmin
+        ? "SELECT * FROM applicants WHERE id = ? LIMIT 1"
+        : "SELECT * FROM applicants WHERE id = ? AND user_id = ? LIMIT 1",
+      args: isAdmin ? [id] : [id, sessionUser.id],
     });
 
     const row = result.rows[0] as unknown as Record<string, unknown> | undefined;

@@ -3,16 +3,74 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FilePlus, Search, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FilePlus, ListChecks, Search, ShieldCheck } from "lucide-react";
+
+type CurrentUser = {
+  id: string;
+  username: string;
+  role: string;
+};
 
 export default function HomePage() {
   const router = useRouter();
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const response = await fetch("/api/auth/me", { cache: "no-store" });
+      if (!response.ok) return;
+      const payload = (await response.json()) as { data: CurrentUser };
+      setUser(payload.data);
+    };
+
+    loadUser();
+  }, []);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
     router.refresh();
   };
+
+  const roleBadgeClass =
+    user?.role === "admin"
+      ? "bg-red-100 text-red-700 border border-red-200"
+      : "bg-slate-100 text-slate-700 border border-slate-200";
+
+  const actionCards = [
+    {
+      href: "/apply",
+      title: "New Application",
+      description: "Start a new eTAS application for your upcoming visit to Somalia.",
+      icon: FilePlus,
+      iconClass: "bg-blue-600",
+    },
+    {
+      href: "/visas",
+      title: "Existing Visas",
+      description: "Browse current visas and use quick edit/view actions.",
+      icon: ListChecks,
+      iconClass: "bg-emerald-700",
+    },
+    {
+      href: "/verify",
+      title: "Check Application",
+      description: "View your travel document or track progress using your passport number.",
+      icon: Search,
+      iconClass: "bg-slate-800",
+    },
+  ];
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredCards = actionCards.filter((card) => {
+    if (!normalizedQuery) return true;
+    return (
+      card.title.toLowerCase().includes(normalizedQuery) ||
+      card.description.toLowerCase().includes(normalizedQuery)
+    );
+  });
 
   return (
     <main className="min-h-screen w-full flex flex-col bg-slate-50 font-sans">
@@ -29,9 +87,23 @@ export default function HomePage() {
             </p>
           </div>
         </div>
-        <div className="hidden md:flex gap-6 text-sm font-semibold text-slate-600 items-center">
-          <Link href="/contact" className="hover:text-blue-600">Contact Support</Link>
-          <Link href="/guidelines" className="hover:text-blue-600">Guidelines</Link>
+        <div className="hidden md:flex gap-4 text-sm font-semibold text-slate-600 items-center">
+          {user ? (
+            <div className="flex items-center gap-2">
+              <span className="text-slate-600 font-medium">User: {user.username}</span>
+              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${roleBadgeClass}`}>
+                {user.role}
+              </span>
+            </div>
+          ) : (
+            <div className="text-slate-500 font-medium">Loading user...</div>
+          )}
+          <Link
+            href="/visas"
+            className="px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-100 text-slate-700"
+          >
+            Existing Visas
+          </Link>
           <button
             onClick={handleLogout}
             className="px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-100 text-slate-700"
@@ -55,36 +127,40 @@ export default function HomePage() {
           Apply for your travel authorization online or track your current status in seconds.
         </p>
 
-        {/* Action Cards */}
-        <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl">
-          {/* Apply Card */}
-          <Link 
-            href="/apply" 
-            className="group flex flex-col items-center p-10 bg-white rounded-2xl shadow-md border-2 border-transparent hover:border-blue-500 hover:shadow-xl transition-all duration-300"
-          >
-            <div className="mb-6 p-4 bg-blue-600 rounded-xl text-white group-hover:scale-110 transition-transform">
-              <FilePlus size={32} />
-            </div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">New Application</h3>
-            <p className="text-slate-500 text-center">
-              Start a new eTAS application for your upcoming visit to Somalia.
-            </p>
-          </Link>
-
-          {/* Check Status Card */}
-          <Link 
-            href="/verify" 
-            className="group flex flex-col items-center p-10 bg-white rounded-2xl shadow-md border-2 border-transparent hover:border-blue-500 hover:shadow-xl transition-all duration-300"
-          >
-            <div className="mb-6 p-4 bg-slate-800 rounded-xl text-white group-hover:scale-110 transition-transform">
-              <Search size={32} />
-            </div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">Check Application</h3>
-            <p className="text-slate-500 text-center">
-              View your travel document or track progress using your passport number.
-            </p>
-          </Link>
+        <div className="w-full max-w-2xl mb-8">
+          <div className="relative">
+            <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Quick search actions (e.g. new, visa, check)"
+              className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+            />
+          </div>
         </div>
+
+        {/* Action Cards */}
+        <div className="grid md:grid-cols-3 gap-8 w-full max-w-5xl">
+          {filteredCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <Link
+                key={card.href}
+                href={card.href}
+                className="group flex flex-col items-center p-10 bg-white rounded-2xl shadow-md border-2 border-transparent hover:border-blue-500 hover:shadow-xl transition-all duration-300"
+              >
+                <div className={`mb-6 p-4 ${card.iconClass} rounded-xl text-white group-hover:scale-110 transition-transform`}>
+                  <Icon size={32} />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">{card.title}</h3>
+                <p className="text-slate-500 text-center">{card.description}</p>
+              </Link>
+            );
+          })}
+        </div>
+        {filteredCards.length === 0 && (
+          <p className="mt-6 text-sm text-slate-500">No actions matched your search.</p>
+        )}
       </section>
 
       {/* Simple Footer */}

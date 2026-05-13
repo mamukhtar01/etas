@@ -9,6 +9,7 @@ export type UserRow = {
   id: string;
   username: string;
   pin: string | null;
+  role: string;
 };
 
 export type SessionUser = {
@@ -22,7 +23,7 @@ export function normalizeUsername(username: string) {
 
 export async function findUserByUsername(username: string): Promise<UserRow | null> {
   const result = await turso.execute({
-    sql: "SELECT id, username, pin FROM users WHERE username = ? LIMIT 1",
+    sql: "SELECT id, username, pin, role FROM users WHERE username = ? LIMIT 1",
     args: [normalizeUsername(username)],
   });
 
@@ -31,6 +32,7 @@ export async function findUserByUsername(username: string): Promise<UserRow | nu
         id?: unknown;
         username?: unknown;
         pin?: unknown;
+        role?: unknown;
       }
     | undefined;
 
@@ -42,6 +44,34 @@ export async function findUserByUsername(username: string): Promise<UserRow | nu
     id: String(row.id ?? ""),
     username: String(row.username ?? ""),
     pin: row.pin ? String(row.pin) : null,
+    role: String(row.role ?? "user"),
+  };
+}
+
+export async function findUserById(id: string): Promise<UserRow | null> {
+  const result = await turso.execute({
+    sql: "SELECT id, username, pin, role FROM users WHERE id = ? LIMIT 1",
+    args: [id],
+  });
+
+  const row = result.rows[0] as
+    | {
+        id?: unknown;
+        username?: unknown;
+        pin?: unknown;
+        role?: unknown;
+      }
+    | undefined;
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: String(row.id ?? ""),
+    username: String(row.username ?? ""),
+    pin: row.pin ? String(row.pin) : null,
+    role: String(row.role ?? "user"),
   };
 }
 

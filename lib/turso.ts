@@ -96,11 +96,20 @@ export async function ensureUsersSchema() {
           id TEXT PRIMARY KEY,
           username TEXT NOT NULL,
           pin TEXT,
+          role TEXT NOT NULL DEFAULT 'user',
           created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
       `,
       )
       .then(async () => {
+        try {
+          await turso.execute(
+            "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'",
+          );
+        } catch {
+          // Column already exists.
+        }
+
         await turso.execute(
           "CREATE UNIQUE INDEX IF NOT EXISTS users_username_uq ON users(username)",
         );

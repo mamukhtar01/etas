@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
       const id = randomUUID();
 
       await turso.execute({
-        sql: "INSERT INTO users (id, username, pin) VALUES (?, ?, ?)",
-        args: [id, username, pin],
+        sql: "INSERT INTO users (id, username, pin, role) VALUES (?, ?, ?, ?)",
+        args: [id, username, pin, "user"],
       });
 
       const response = NextResponse.json({ data: { id, username } });
