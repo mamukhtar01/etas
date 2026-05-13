@@ -3,6 +3,7 @@
 import Image from "next/image";
 import QRCode from "react-qr-code";
 import Barcode from "react-barcode";
+import { getPassportIssuePlace } from "@/lib/country-iso3";
 
 export type ETASDisplayData = {
   id: string;
@@ -201,7 +202,7 @@ export function ETASPdfTemplate({
             />
             <DetailField
               label="Passport Issue Place"
-              value={displayData.nationality.slice(0, 3)}
+              value={getPassportIssuePlace(displayData.nationality)}
             />
             <DetailField
               label="Passport Issue Date"

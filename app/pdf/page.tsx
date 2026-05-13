@@ -17,6 +17,7 @@ import { jsPDF } from "jspdf";
 import Barcode from "react-barcode";
 import { fetchApplicant } from "@/lib/applicants-client";
 import { ApplicantRecord } from "@/lib/applicants";
+import { getPassportIssuePlace } from "@/lib/country-iso3";
 
 export default function ETASOfficialPreviewPage() {
   return (
@@ -364,7 +365,7 @@ function PreviewContent() {
                   />
                   <DetailField
                     label="Passport Issue Place"
-                    value={displayData.nationality.slice(0, 3)}
+                    value={getPassportIssuePlace(displayData.nationality)}
                   />
                   <DetailField
                     label="Passport Issue Date"

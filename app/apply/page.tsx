@@ -1,10 +1,15 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useState, useEffect, Suspense } from "react";
+import { ChangeEvent, FormEvent, useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { User, CreditCard, Camera, Loader2, Plane } from "lucide-react";
 import Image from "next/image";
 import { fetchApplicant, upsertApplicant } from "@/lib/applicants-client";
+import {
+  countryOptions,
+  getPassportIssuePlace,
+  normalizeNationalityInput,
+} from "@/lib/country-iso3";
 
 const initialState = {
   given_name: "",
@@ -39,6 +44,14 @@ function ApplicationForm() {
   const [photoError, setPhotoError] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const hasNationalityOption = useMemo(
+    () => countryOptions.some((country) => country.NAME === formData.nationality),
+    [formData.nationality],
+  );
+  const passportIssuePlace = useMemo(
+    () => getPassportIssuePlace(formData.nationality),
+    [formData.nationality],
+  );
 
   // Load data if editing
   useEffect(() => {
@@ -61,7 +74,7 @@ function ApplicationForm() {
             given_name: data.given_name,
             surname: data.surname,
             date_of_birth: data.date_of_birth,
-            nationality: data.nationality,
+            nationality: normalizeNationalityInput(data.nationality),
             passport_number: data.passport_number,
             passport_issue_date: data.passport_issue_date,
             passport_expiry_date: data.passport_expiry_date,
@@ -179,7 +192,34 @@ function ApplicationForm() {
             </div>
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <FormField label="Passport Number" value={formData.passport_number} onChange={handleChange("passport_number")} />
-              <FormField label="Nationality" value={formData.nationality} onChange={handleChange("nationality")} />
+              <div className="flex flex-col">
+                <label className="mb-1.5 text-sm font-semibold text-slate-700">Nationality</label>
+                <select
+                  value={formData.nationality}
+                  onChange={handleChange("nationality")}
+                  className="rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                  required
+                >
+                  <option value="">Select nationality...</option>
+                  {formData.nationality && !hasNationalityOption && (
+                    <option value={formData.nationality}>{formData.nationality}</option>
+                  )}
+                  {countryOptions.map((country) => (
+                    <option key={country.CODE} value={country.NAME}>
+                      {country.NAME}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label className="mb-1.5 text-sm font-semibold text-slate-700">Passport Issue Place</label>
+                <input
+                  type="text"
+                  value={passportIssuePlace}
+                  readOnly
+                  className="rounded-lg border border-slate-300 bg-slate-100 px-4 py-2.5 text-slate-900"
+                />
+              </div>
               <FormField label="Issue Date" type="date" value={formData.passport_issue_date} onChange={handleChange("passport_issue_date")} />
               <FormField label="Expiry Date" type="date" value={formData.passport_expiry_date} onChange={handleChange("passport_expiry_date")} />
             </div>
