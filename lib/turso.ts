@@ -47,3 +47,66 @@ export async function ensureApplicantsSchema() {
 
   await schemaInitPromise;
 }
+
+let applicantsOwnershipInitPromise: Promise<void> | null = null;
+
+export async function ensureApplicantsOwnershipSchema() {
+  if (!applicantsOwnershipInitPromise) {
+    applicantsOwnershipInitPromise = (async () => {
+      // Migrate existing table to include ownership columns.
+      try {
+        await turso.execute("ALTER TABLE applicants ADD COLUMN user_id TEXT");
+      } catch {
+        // Column already exists.
+      }
+
+      try {
+        await turso.execute(
+          "ALTER TABLE applicants ADD COLUMN created_by_username TEXT",
+        );
+      } catch {
+        // Column already exists.
+      }
+
+      try {
+        await turso.execute(
+          "ALTER TABLE applicants ADD COLUMN user_updated TEXT",
+        );
+      } catch {
+        // Column already exists.
+      }
+
+      await turso.execute(
+        "CREATE INDEX IF NOT EXISTS applicants_user_id_idx ON applicants(user_id)",
+      );
+    })().then(() => undefined);
+  }
+
+  await applicantsOwnershipInitPromise;
+}
+
+let usersSchemaInitPromise: Promise<void> | null = null;
+
+export async function ensureUsersSchema() {
+  if (!usersSchemaInitPromise) {
+    usersSchemaInitPromise = turso
+      .execute(
+        `
+        CREATE TABLE IF NOT EXISTS users (
+          id TEXT PRIMARY KEY,
+          username TEXT NOT NULL,
+          pin TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `,
+      )
+      .then(async () => {
+        await turso.execute(
+          "CREATE UNIQUE INDEX IF NOT EXISTS users_username_uq ON users(username)",
+        );
+      })
+      .then(() => undefined);
+  }
+
+  await usersSchemaInitPromise;
+}

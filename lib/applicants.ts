@@ -12,6 +12,9 @@ export type ApplicantRecord = {
   sponsor: string;
   etas_number: string;
   applicant_photo_url: string;
+  user_id: string;
+  created_by_username: string;
+  user_updated: string;
   created_at: string;
 };
 

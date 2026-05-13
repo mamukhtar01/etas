@@ -2,9 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FilePlus, Search, ShieldCheck } from "lucide-react";
 
 export default function HomePage() {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  };
+
   return (
     <main className="min-h-screen w-full flex flex-col bg-slate-50 font-sans">
       {/* Navigation Header */}
@@ -20,9 +29,15 @@ export default function HomePage() {
             </p>
           </div>
         </div>
-        <div className="hidden md:flex gap-6 text-sm font-semibold text-slate-600">
+        <div className="hidden md:flex gap-6 text-sm font-semibold text-slate-600 items-center">
           <Link href="/contact" className="hover:text-blue-600">Contact Support</Link>
           <Link href="/guidelines" className="hover:text-blue-600">Guidelines</Link>
+          <button
+            onClick={handleLogout}
+            className="px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-100 text-slate-700"
+          >
+            Logout
+          </button>
         </div>
       </nav>
 

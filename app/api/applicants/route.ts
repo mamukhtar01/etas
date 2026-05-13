@@ -1,5 +1,10 @@
+import { getSessionUser } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
-import { ensureApplicantsSchema, turso } from "@/lib/turso";
+import {
+  ensureApplicantsOwnershipSchema,
+  ensureApplicantsSchema,
+  turso,
+} from "@/lib/turso";
 import { ApplicantRecord, ApplicantUpsertInput } from "@/lib/applicants";
 
 export const runtime = "nodejs";
@@ -53,6 +58,9 @@ function rowToApplicant(row: Record<string, unknown>): ApplicantRecord {
     sponsor: String(row.sponsor ?? ""),
     etas_number: String(row.etas_number ?? ""),
     applicant_photo_url: String(row.applicant_photo_url ?? ""),
+    user_id: String(row.user_id ?? ""),
+    created_by_username: String(row.created_by_username ?? ""),
+    user_updated: String(row.user_updated ?? ""),
     created_at: String(row.created_at ?? ""),
   };
 }
@@ -61,6 +69,7 @@ async function getApplicantByFilter(filters: {
   id?: string;
   passport?: string;
   etas?: string;
+  userId: string;
 }) {
   const conditions: string[] = [];
   const args: string[] = [];
@@ -85,8 +94,8 @@ async function getApplicantByFilter(filters: {
   }
 
   const result = await turso.execute({
-    sql: `SELECT * FROM applicants WHERE ${conditions.join(" OR ")} LIMIT 1`,
-    args,
+    sql: `SELECT * FROM applicants WHERE user_id = ? AND (${conditions.join(" OR ")}) LIMIT 1`,
+    args: [filters.userId, ...args],
   });
 
   const row = result.rows[0] as unknown as Record<string, unknown> | undefined;
@@ -95,7 +104,13 @@ async function getApplicantByFilter(filters: {
 
 export async function GET(request: NextRequest) {
   try {
+    const sessionUser = getSessionUser(request);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await ensureApplicantsSchema();
+    await ensureApplicantsOwnershipSchema();
     await ensureApplicantsIndexes();
 
     const { searchParams } = new URL(request.url);
@@ -103,7 +118,12 @@ export async function GET(request: NextRequest) {
     const passport = searchParams.get("passport")?.trim();
     const etas = searchParams.get("etas")?.trim();
 
-    const data = await getApplicantByFilter({ id, passport, etas });
+    const data = await getApplicantByFilter({
+      id,
+      passport,
+      etas,
+      userId: sessionUser.id,
+    });
 
     if (!data) {
       return NextResponse.json({ error: "Applicant not found" }, { status: 404 });
@@ -121,7 +141,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const sessionUser = getSessionUser(request);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await ensureApplicantsSchema();
+    await ensureApplicantsOwnershipSchema();
     await ensureApplicantsIndexes();
 
     const input = (await request.json()) as ApplicantUpsertInput;
@@ -153,8 +179,8 @@ export async function POST(request: NextRequest) {
     const normalizedPassport = input.passport_number.trim().toUpperCase();
 
     const existing = await turso.execute({
-      sql: "SELECT id FROM applicants WHERE id = ? LIMIT 1",
-      args: [id],
+      sql: "SELECT id FROM applicants WHERE id = ? AND user_id = ? LIMIT 1",
+      args: [id, sessionUser.id],
     });
 
     if (existing.rows.length > 0) {
@@ -173,7 +199,10 @@ export async function POST(request: NextRequest) {
             visit_purpose = ?,
             sponsor = ?,
             etas_number = ?,
-            applicant_photo_url = ?
+            applicant_photo_url = ?,
+            user_id = ?,
+            created_by_username = ?,
+            user_updated = ?
           WHERE id = ?
         `,
         args: [
@@ -189,6 +218,9 @@ export async function POST(request: NextRequest) {
           input.sponsor,
           input.etas_number,
           input.applicant_photo_url,
+          sessionUser.id,
+          sessionUser.username,
+          sessionUser.username,
           id,
         ],
       });
@@ -208,8 +240,11 @@ export async function POST(request: NextRequest) {
             visit_purpose,
             sponsor,
             etas_number,
-            applicant_photo_url
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            applicant_photo_url,
+            user_id,
+            created_by_username,
+            user_updated
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         args: [
           id,
@@ -225,13 +260,16 @@ export async function POST(request: NextRequest) {
           input.sponsor,
           input.etas_number,
           input.applicant_photo_url,
+          sessionUser.id,
+          sessionUser.username,
+          sessionUser.username,
         ],
       });
     }
 
     const result = await turso.execute({
-      sql: "SELECT * FROM applicants WHERE id = ? LIMIT 1",
-      args: [id],
+      sql: "SELECT * FROM applicants WHERE id = ? AND user_id = ? LIMIT 1",
+      args: [id, sessionUser.id],
     });
 
     const row = result.rows[0] as unknown as Record<string, unknown> | undefined;
