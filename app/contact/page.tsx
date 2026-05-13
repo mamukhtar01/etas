@@ -5,11 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { 
   ChevronLeft, 
-  Mail, 
-  Globe, 
   MessageSquare, 
   Send,
-  MapPin,
   Clock
 } from "lucide-react";
 

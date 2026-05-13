@@ -13,26 +13,9 @@ import {
 import { useSearchParams } from "next/navigation";
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
-import { supabase } from "@/lib/supabase";
+import { fetchApplicant } from "@/lib/applicants-client";
+import { ApplicantRecord } from "@/lib/applicants";
 import { ETASDisplayData, ETASPdfTemplate } from "@/components/EtasPdfTemplate";
-
-
-type ApplicantRecord = {
-  id: string;
-  given_name: string;
-  surname: string;
-  date_of_birth: string;
-  nationality: string;
-  passport_number: string;
-  passport_issue_date: string;
-  passport_expiry_date: string;
-  sex: string;
-  visit_purpose: string;
-  sponsor: string;
-  etas_number: string;
-  applicant_photo_url: string;
-  created_at: string;
-};
 
 export default function VerifyPage() {
   return (
@@ -59,16 +42,10 @@ function VerificationBox() {
         return;
       }
       try {
-        let query = supabase.from("applicants").select("*");
-        if (idParam && etasParam) {
-          query = query.or(`id.eq.${idParam},etas_number.eq.${etasParam}`);
-        } else if (idParam) {
-          query = query.eq("id", idParam);
-        } else {
-          query = query.eq("etas_number", etasParam);
-        }
-        const { data, error } = await query.single();
-        if (error) throw error;
+        const data = await fetchApplicant({
+          id: idParam ?? undefined,
+          etas: etasParam || undefined,
+        });
         setDbData(data);
       } catch (err) {
         console.error("Search error:", err);

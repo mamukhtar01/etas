@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { fetchApplicant } from "@/lib/applicants-client";
 
 export default function PassportSearchPage() {
   const [passportNumber, setPassportNumber] = useState("");
@@ -16,13 +16,11 @@ export default function PassportSearchPage() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("applicants")
-        .select("id")
-        .eq("passport_number", passportNumber.trim().toUpperCase())
-        .single();
+      const data = await fetchApplicant({
+        passport: passportNumber.trim().toUpperCase(),
+      });
 
-      if (error || !data) {
+      if (!data) {
         setIsErrorState(true);
       } else {
         router.push(`/preview?id=${data.id}&preview=true`);

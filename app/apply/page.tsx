@@ -2,8 +2,9 @@
 
 import { ChangeEvent, FormEvent, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { User, CreditCard, Camera, Loader2, Globe, Plane } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { User, CreditCard, Camera, Loader2, Plane } from "lucide-react";
+import Image from "next/image";
+import { fetchApplicant, upsertApplicant } from "@/lib/applicants-client";
 
 const initialState = {
   given_name: "",
@@ -34,7 +35,6 @@ function ApplicationForm() {
   const [formData, setFormData] = useState(initialState);
   const [existingId, setExistingId] = useState<string | null>(null);
   const [existingEtas, setExistingEtas] = useState<string | null>(null);
-  const [applicantPhoto, setApplicantPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
   const [photoError, setPhotoError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,14 +48,12 @@ function ApplicationForm() {
     if (id || passport) {
       const loadData = async () => {
         setFetching(true);
-        let query = supabase.from("applicants").select("*");
-        
-        if (id) query = query.eq("id", id);
-        else if (passport) query = query.eq("passport_number", passport);
+        const data = await fetchApplicant({
+          id: id ?? undefined,
+          passport: passport ?? undefined,
+        });
 
-        const { data, error } = await query.single();
-
-        if (data && !error) {
+        if (data) {
           setExistingId(data.id);
           setExistingEtas(data.etas_number);
           setPhotoPreview(data.applicant_photo_url);
@@ -94,7 +92,6 @@ function ApplicationForm() {
       return;
     }
 
-    setApplicantPhoto(file);
     const reader = new FileReader();
     reader.onload = () => {
       setPhotoPreview(reader.result as string);
@@ -107,46 +104,25 @@ function ApplicationForm() {
     setLoading(true);
 
     try {
-      let photoUrl = photoPreview; // Keep existing if no new file uploaded
-
-      if (applicantPhoto) {
-        const fileExt = applicantPhoto.name.split(".").pop();
-        const fileName = `${formData.passport_number.trim()}_${Date.now()}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("photos")
-          .upload(fileName, applicantPhoto);
-
-        if (uploadError) throw uploadError;
-
-        const { data: publicUrlData } = supabase.storage
-          .from("photos")
-          .getPublicUrl(fileName);
-
-        photoUrl = publicUrlData.publicUrl;
-      }
+      const photoUrl = photoPreview; // Data URL set by FileReader in handlePhotoChange
 
       // Generate new ETAS only if it doesn't exist
       const etasNumber = existingEtas || "176" + Math.floor(1000000 + Math.random() * 9000000).toString();
 
-      const { data: savedData, error: dbError } = await supabase
-        .from("applicants")
-        .upsert({
-          ...(existingId ? { id: existingId } : {}), // Key to updating vs creating
-          ...formData,
-          passport_number: formData.passport_number.toUpperCase(),
-          etas_number: etasNumber,
-          applicant_photo_url: photoUrl,
-        })
-        .select()
-        .single();
+      const savedData = await upsertApplicant({
+        ...(existingId ? { id: existingId } : {}),
+        ...formData,
+        passport_number: formData.passport_number,
+        etas_number: etasNumber,
+        applicant_photo_url: photoUrl,
+      });
 
-      if (dbError) throw dbError;
       router.push(`/preview?id=${savedData.id}`);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving:", error);
-      alert(error.message || "An error occurred.");
+      const message =
+        error instanceof Error ? error.message : "An error occurred.";
+      alert(message);
     } finally {
       setLoading(false);
     }
@@ -230,7 +206,14 @@ function ApplicationForm() {
             <div className="flex flex-col items-center gap-6 rounded-xl border-2 border-dashed border-slate-200 p-6 hover:border-blue-400 md:flex-row">
               <div className="h-32 w-28 overflow-hidden rounded-lg border bg-slate-50 relative">
                 {photoPreview ? (
-                  <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
+                  <Image
+                    src={photoPreview}
+                    alt="Preview"
+                    fill
+                    unoptimized
+                    sizes="112px"
+                    className="object-cover"
+                  />
                 ) : (
                   <div className="flex h-full items-center justify-center text-xs text-slate-400">No Photo</div>
                 )}

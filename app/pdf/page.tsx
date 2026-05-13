@@ -15,24 +15,8 @@ import QRCode from "react-qr-code";
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 import Barcode from "react-barcode";
-import { supabase } from "@/lib/supabase";
-
-type ApplicantRecord = {
-  id: string;
-  given_name: string;
-  surname: string;
-  date_of_birth: string;
-  nationality: string;
-  passport_number: string;
-  passport_issue_date: string;
-  passport_expiry_date: string;
-  sex: string;
-  visit_purpose: string;
-  sponsor: string;
-  etas_number: string;
-  applicant_photo_url: string;
-  created_at: string;
-};
+import { fetchApplicant } from "@/lib/applicants-client";
+import { ApplicantRecord } from "@/lib/applicants";
 
 export default function ETASOfficialPreviewPage() {
   return (
@@ -72,18 +56,10 @@ function PreviewContent() {
       }
 
       try {
-        let query = supabase.from("applicants").select("*");
-
-        if (id && passport) {
-          query = query.or(`id.eq.${id},passport_number.eq.${passport}`);
-        } else if (id) {
-          query = query.eq("id", id);
-        } else {
-          query = query.eq("passport_number", passport);
-        }
-
-        const { data, error } = await query.single();
-        if (error) throw error;
+        const data = await fetchApplicant({
+          id: id ?? undefined,
+          passport: passport ?? undefined,
+        });
         setDbData(data);
       } catch (err) {
         console.error("Search error:", err);
