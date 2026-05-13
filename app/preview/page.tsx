@@ -10,7 +10,7 @@ import {
 } from "react";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 import { fetchApplicant } from "@/lib/applicants-client";
@@ -37,6 +37,7 @@ function PreviewFallback() {
 }
 
 function PreviewContent() {
+  const router = useRouter();
   const params = useSearchParams();
   const containerRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
@@ -133,6 +134,12 @@ function PreviewContent() {
     <div className="min-h-screen bg-gray-200 py-6 md:py-10 flex flex-col items-center font-sans overflow-x-hidden">
       {/* Action Buttons */}
       <div className="mb-6 flex gap-4 no-print z-50">
+        <button
+          onClick={() => router.back()}
+          className="px-5 py-2 text-slate-700 bg-white rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 border transition-colors"
+        >
+          ← Back
+        </button>
         {!preview && (
           <Link
             href={`/apply?id=${displayData.id}`}
