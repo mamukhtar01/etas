@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FilePlus, ListChecks, Search, ShieldCheck } from "lucide-react";
+import { FilePlus, ListChecks, ShieldCheck } from "lucide-react";
 
 type CurrentUser = {
   id: string;
@@ -15,7 +15,6 @@ type CurrentUser = {
 export default function HomePage() {
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null>(null);
-  const [query, setQuery] = useState("");
 
   useEffect(() => {
     const loadUser = async () => {
@@ -43,46 +42,28 @@ export default function HomePage() {
     {
       href: "/apply",
       title: "New Application",
-      description: "Start a new eTAS application for your upcoming visit to Somalia.",
       icon: FilePlus,
       iconClass: "bg-blue-600",
     },
     {
       href: "/visas",
       title: "Existing Visas",
-      description: "Browse current visas and use quick edit/view actions.",
       icon: ListChecks,
       iconClass: "bg-emerald-700",
     },
-    {
-      href: "/verify",
-      title: "Check Application",
-      description: "View your travel document or track progress using your passport number.",
-      icon: Search,
-      iconClass: "bg-slate-800",
-    },
   ];
-
-  const normalizedQuery = query.trim().toLowerCase();
-  const filteredCards = actionCards.filter((card) => {
-    if (!normalizedQuery) return true;
-    return (
-      card.title.toLowerCase().includes(normalizedQuery) ||
-      card.description.toLowerCase().includes(normalizedQuery)
-    );
-  });
 
   return (
     <main className="min-h-screen w-full flex flex-col bg-slate-50 font-sans">
       {/* Navigation Header */}
-      <nav className="w-full px-8 py-4 bg-white border-b flex justify-between items-center shadow-sm">
+      <nav className="w-full px-5 md:px-8 py-3.5 bg-white border-b flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
-          <Image src="/logo.svg" alt="FGS Logo" width={50} height={50} />
+          <Image src="/logo.svg" alt="FGS Logo" width={44} height={44} />
           <div>
-            <h1 className="text-[14px] font-bold text-slate-900 leading-tight">
+            <h1 className="text-[13px] md:text-[14px] font-bold text-slate-900 leading-tight">
               JAMHUURIYADDA FEDERAALKA SOOMAALIYA
             </h1>
-            <p className="text-[12px] text-slate-500 font-medium">
+            <p className="text-[11px] md:text-[12px] text-slate-500 font-medium">
               Immigration and Citizenship Agency
             </p>
           </div>
@@ -114,53 +95,34 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section - Full Page Content */}
-      <section className="flex-1 flex flex-col items-center justify-center px-4 text-center">
-        <div className="mb-8 p-4 bg-blue-50 rounded-full">
-          <ShieldCheck className="w-12 h-12 text-blue-600" />
+      <section className="flex-1 flex flex-col items-center justify-center px-4 py-10 text-center">
+        <div className="mb-5 p-3.5 bg-blue-50 rounded-full">
+          <ShieldCheck className="w-10 h-10 text-blue-600" />
         </div>
         
-        <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">
+        <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">
           Electronic Travel Authorization <span className="text-blue-600">(eTAS)</span>
         </h2>
-        <p className="text-lg text-slate-600 max-w-2xl mb-12 leading-relaxed">
-          Welcome to the official portal for the Federal Republic of Somalia. 
-          Apply for your travel authorization online or track your current status in seconds.
-        </p>
-
-        <div className="w-full max-w-2xl mb-8">
-          <div className="relative">
-            <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Quick search actions (e.g. new, visa, check)"
-              className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
-            />
-          </div>
-        </div>
+        <div className="mb-8" />
 
         {/* Action Cards */}
-        <div className="grid md:grid-cols-3 gap-8 w-full max-w-5xl">
-          {filteredCards.map((card) => {
+        <div className="grid md:grid-cols-2 gap-6 w-full max-w-3xl">
+          {actionCards.map((card) => {
             const Icon = card.icon;
             return (
               <Link
                 key={card.href}
                 href={card.href}
-                className="group flex flex-col items-center p-10 bg-white rounded-2xl shadow-md border-2 border-transparent hover:border-blue-500 hover:shadow-xl transition-all duration-300"
+                className="group flex flex-col items-center p-8 md:p-9 bg-white rounded-2xl shadow-md border border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all duration-300"
               >
-                <div className={`mb-6 p-4 ${card.iconClass} rounded-xl text-white group-hover:scale-110 transition-transform`}>
-                  <Icon size={32} />
+                <div className={`mb-5 p-3.5 ${card.iconClass} rounded-xl text-white group-hover:scale-110 transition-transform`}>
+                  <Icon size={26} />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-2">{card.title}</h3>
-                <p className="text-slate-500 text-center">{card.description}</p>
+                <h3 className="text-xl md:text-2xl font-bold text-slate-900">{card.title}</h3>
               </Link>
             );
           })}
         </div>
-        {filteredCards.length === 0 && (
-          <p className="mt-6 text-sm text-slate-500">No actions matched your search.</p>
-        )}
       </section>
 
       {/* Simple Footer */}
