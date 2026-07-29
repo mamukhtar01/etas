@@ -108,16 +108,38 @@ async function getApplicantByFilter(filters: {
   return row ? rowToApplicant(row) : null;
 }
 
+const LIST_COLUMNS = [
+  "id",
+  "given_name",
+  "surname",
+  "date_of_birth",
+  "nationality",
+  "passport_number",
+  "passport_issue_date",
+  "passport_expiry_date",
+  "sex",
+  "visit_purpose",
+  "sponsor",
+  "etas_number",
+  "user_id",
+  "created_by_username",
+  "user_updated",
+  "created_at",
+].join(", ");
+
 async function listApplicantsByRole(filters: {
   userId: string;
   isAdmin: boolean;
 }) {
+  // Photo data is stored as a base64 data URL and can be large; the list
+  // view doesn't render photos, so exclude that column to keep the
+  // response small and avoid timeouts/size limits with many applicants.
   const result = filters.isAdmin
     ? await turso.execute({
-        sql: "SELECT * FROM applicants ORDER BY created_at DESC",
+        sql: `SELECT ${LIST_COLUMNS} FROM applicants ORDER BY created_at DESC`,
       })
     : await turso.execute({
-        sql: "SELECT * FROM applicants WHERE user_id = ? ORDER BY created_at DESC",
+        sql: `SELECT ${LIST_COLUMNS} FROM applicants WHERE user_id = ? ORDER BY created_at DESC`,
         args: [filters.userId],
       });
 
