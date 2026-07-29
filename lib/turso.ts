@@ -42,7 +42,13 @@ export async function ensureApplicantsSchema() {
         )
       `,
       )
-      .then(() => undefined);
+      .then(() => undefined)
+      .catch((error) => {
+        // Don't cache a transient failure (e.g. a network blip) forever;
+        // let the next call retry instead of failing every request.
+        schemaInitPromise = null;
+        throw error;
+      });
   }
 
   await schemaInitPromise;
@@ -76,10 +82,31 @@ export async function ensureApplicantsOwnershipSchema() {
         // Column already exists.
       }
 
+      try {
+        await turso.execute(
+          "ALTER TABLE applicants ADD COLUMN etas_issue_date TEXT",
+        );
+      } catch {
+        // Column already exists.
+      }
+
+      try {
+        await turso.execute(
+          "ALTER TABLE applicants ADD COLUMN etas_expiry_date TEXT",
+        );
+      } catch {
+        // Column already exists.
+      }
+
       await turso.execute(
         "CREATE INDEX IF NOT EXISTS applicants_user_id_idx ON applicants(user_id)",
       );
-    })().then(() => undefined);
+    })()
+      .then(() => undefined)
+      .catch((error) => {
+        applicantsOwnershipInitPromise = null;
+        throw error;
+      });
   }
 
   await applicantsOwnershipInitPromise;
@@ -114,7 +141,11 @@ export async function ensureUsersSchema() {
           "CREATE UNIQUE INDEX IF NOT EXISTS users_username_uq ON users(username)",
         );
       })
-      .then(() => undefined);
+      .then(() => undefined)
+      .catch((error) => {
+        usersSchemaInitPromise = null;
+        throw error;
+      });
   }
 
   await usersSchemaInitPromise;

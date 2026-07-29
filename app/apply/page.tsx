@@ -151,6 +151,12 @@ function ApplicationForm() {
     <div className="min-h-screen bg-[#f8fafc] px-4 py-12 md:px-6">
       <div className="mx-auto max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
         <header className="bg-slate-900 px-8 py-10 text-white">
+          <button
+            onClick={() => router.back()}
+            className="mb-4 px-4 py-1.5 text-white/90 bg-white/10 rounded-md text-sm font-medium hover:bg-white/20 border border-white/20 transition-colors"
+          >
+            ← Back
+          </button>
           <h1 className="text-3xl font-bold tracking-tight">
             {existingId ? "Edit eTAS Application" : "eTAS Application"}
           </h1>

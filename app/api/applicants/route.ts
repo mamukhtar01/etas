@@ -62,6 +62,8 @@ function rowToApplicant(row: Record<string, unknown>): ApplicantRecord {
     created_by_username: String(row.created_by_username ?? ""),
     user_updated: String(row.user_updated ?? ""),
     created_at: String(row.created_at ?? ""),
+    etas_issue_date: String(row.etas_issue_date ?? ""),
+    etas_expiry_date: String(row.etas_expiry_date ?? ""),
   };
 }
 
@@ -125,6 +127,8 @@ const LIST_COLUMNS = [
   "created_by_username",
   "user_updated",
   "created_at",
+  "etas_issue_date",
+  "etas_expiry_date",
 ].join(", ");
 
 async function listApplicantsByRole(filters: {
@@ -247,6 +251,11 @@ export async function POST(request: NextRequest) {
     const id = input.id?.trim() || crypto.randomUUID();
     const normalizedPassport = input.passport_number.trim().toUpperCase();
 
+    // Every save (new application or edit) is treated as a fresh issuance.
+    const etasIssueDate = new Date();
+    const etasExpiryDate = new Date(etasIssueDate);
+    etasExpiryDate.setMonth(etasExpiryDate.getMonth() + 1);
+
     const existing = await turso.execute({
       sql: isAdmin
         ? "SELECT id, user_id, created_by_username FROM applicants WHERE id = ? LIMIT 1"
@@ -281,7 +290,9 @@ export async function POST(request: NextRequest) {
             applicant_photo_url = ?,
             user_id = ?,
             created_by_username = ?,
-            user_updated = ?
+            user_updated = ?,
+            etas_issue_date = ?,
+            etas_expiry_date = ?
           WHERE id = ?
         `,
         args: [
@@ -300,6 +311,8 @@ export async function POST(request: NextRequest) {
           ownerUserId,
           createdByUsername,
           user.username,
+          etasIssueDate.toISOString(),
+          etasExpiryDate.toISOString(),
           id,
         ],
       });
@@ -322,8 +335,10 @@ export async function POST(request: NextRequest) {
             applicant_photo_url,
             user_id,
             created_by_username,
-            user_updated
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            user_updated,
+            etas_issue_date,
+            etas_expiry_date
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         args: [
           id,
@@ -342,6 +357,8 @@ export async function POST(request: NextRequest) {
           sessionUser.id,
           user.username,
           user.username,
+          etasIssueDate.toISOString(),
+          etasExpiryDate.toISOString(),
         ],
       });
     }

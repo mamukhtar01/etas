@@ -16,6 +16,8 @@ export type ApplicantRecord = {
   created_by_username: string;
   user_updated: string;
   created_at: string;
+  etas_issue_date: string;
+  etas_expiry_date: string;
 };
 
 export type ApplicantUpsertInput = {

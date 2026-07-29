@@ -58,9 +58,16 @@ function VerificationBox() {
 
   const displayData = useMemo<ETASDisplayData | null>(() => {
     if (!dbData) return null;
-    const issueDateObj = new Date(dbData.created_at);
-    const expiryDateObj = new Date(issueDateObj);
-    expiryDateObj.setDate(expiryDateObj.getDate() + 90);
+    const issueDateObj = new Date(dbData.etas_issue_date || dbData.created_at);
+    let expiryDateObj: Date;
+    if (dbData.etas_expiry_date) {
+      expiryDateObj = new Date(dbData.etas_expiry_date);
+    } else {
+      // Legacy records saved before etas_expiry_date existed: fall back to
+      // the original 90-day rule until the applicant is next edited.
+      expiryDateObj = new Date(issueDateObj);
+      expiryDateObj.setDate(expiryDateObj.getDate() + 90);
+    }
     return {
       ...dbData,
       formatted_issue_date: issueDateObj.toLocaleDateString("en-GB", {
