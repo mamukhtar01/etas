@@ -19,6 +19,7 @@ export default function VisasPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [passportSearch, setPassportSearch] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -50,6 +51,12 @@ export default function VisasPage() {
     router.push("/login");
     router.refresh();
   };
+
+  const filteredItems = items.filter((item) =>
+    item.passport_number
+      ?.toLowerCase()
+      .includes(passportSearch.trim().toLowerCase())
+  );
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 md:px-8">
@@ -98,7 +105,17 @@ export default function VisasPage() {
       )}
 
       {!loading && !error && (
-        <div className="overflow-x-auto bg-white border rounded-xl">
+        <div className="bg-white border rounded-xl">
+          <div className="px-5 py-4 border-b">
+            <input
+              type="text"
+              value={passportSearch}
+              onChange={(e) => setPassportSearch(e.target.value)}
+              placeholder="Search by passport number..."
+              className="w-full md:w-80 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-slate-100 text-slate-700">
               <tr>
@@ -112,7 +129,7 @@ export default function VisasPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <tr key={item.id} className="border-t">
                   <td className="px-4 py-3 font-medium text-slate-800">{item.etas_number}</td>
                   <td className="px-4 py-3">{item.given_name} {item.surname}</td>
@@ -138,15 +155,18 @@ export default function VisasPage() {
                   </td>
                 </tr>
               ))}
-              {items.length === 0 && (
+              {filteredItems.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                    No visas found.
+                    {items.length === 0
+                      ? "No visas found."
+                      : "No visas match that passport number."}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </main>
